@@ -61,6 +61,7 @@ type FormType = {
     feedback: number,
     status: number,
     printer_count: number;
+    event_fee: string;
     locationInfo: string;
     event_otp: string;
     view_agenda_by: number;
@@ -73,6 +74,7 @@ const AddEvent: React.FC = () => {
     const navigate = useNavigate();
     const { register, handleSubmit, formState: { errors }, setValue, reset } = useForm<FormType>();
     const [, setPrinters] = useState<number>(0);
+    const [eventFee , setEventFee] = useState<string>("0");
     const [selectedImage, setSelectedImage] = useState('');
     const [, setImage] = useState<File | null>(null);
     const [randomOTP, setRandomOTP] = useState<string>("");
@@ -92,6 +94,7 @@ const AddEvent: React.FC = () => {
     const [eventEndDate, setEventEndDate] = useState<string>("");
 
     const [viewAgendaBy, setViewAgendaBy] = useState(0); // 0 for unchecked, 1 for checked
+    const [paidEvent, setPaidEvent] = useState(0)
 
 
 
@@ -108,6 +111,10 @@ const AddEvent: React.FC = () => {
 
     const handleToggleChange = (e: any) => {
         setViewAgendaBy(e.target.checked ? 1 : 0); // Update state based on checkbox value
+    };
+
+    const handleToggleEventFeeChange = (e: any) => {
+        setPaidEvent(e.target.checked ? 1 : 0); // Update state based on checkbox value
     };
 
 
@@ -286,11 +293,13 @@ const AddEvent: React.FC = () => {
                 event_venue_address_1: locationInfo.formatted_address,
                 event_venue_address_2: locationInfo.vicinity,
                 view_agenda_by: viewAgendaBy,
+                paid_event: paidEvent,
                 state,
                 city,
                 country,
                 pincode,
-                google_map_link: locationInfo.url
+                google_map_link: locationInfo.url,
+                event_fee: eventFee
             };
 
             console.log("The updated from data is: ", updatedFormData)
@@ -330,7 +339,7 @@ const AddEvent: React.FC = () => {
                     confirmButtonText: 'Ok'
                 }).then(() => {
                     // Navigate to the home page after success
-                    navigate('/');
+                    navigate('/dashboard');
                 });
 
                 // Clear the form
@@ -393,6 +402,42 @@ const AddEvent: React.FC = () => {
             {/* <h2 className='text-black text-2xl font-semibold ps-5'>Add Details to create new event</h2> */}
             {/* <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-1 gap-4"> */}
             <form onSubmit={handleSubmit(onSubmit)} className="gap-4">
+
+            <div className='flex flex-col gap-3 my-4'>
+                    {/* Printer Count and View Agenda By in one row */}
+                    <div className='flex gap-3'>
+                        {/* Printer Count */}
+                        <div className='flex flex-col gap-3 w-full'>
+                            <label htmlFor='paid_event' className="input cursor-pointer input-bordered bg-white text-black flex items-center gap-2">
+                                <span className="font-semibold text-green-700 flex justify-between items-center">
+                                    Event Type &nbsp;
+                                    <TiArrowRight className='mt-1' />
+                                </span>
+                                <span className='text-sm text-gray-600'>Free</span>
+                                <input
+                                    type="checkbox"
+                                    checked={paidEvent === 1} // Control the checkbox based on state
+                                    onChange={handleToggleEventFeeChange} // Handle the change event
+                                    id="paidEvent"
+                                    className="toggle toggle-md toggle-success"
+                                />
+                                <span className='text-sm text-gray-600'>Paid</span>
+                            </label>
+                        </div>
+
+                        <div className='flex flex-col gap-3 w-full'>
+                            <label htmlFor="event_fee" className="input input-bordered bg-white text-black flex items-center gap-2">
+                                <span className="font-semibold text-green-700 min-w-fit flex justify-between items-center">Event Fee &nbsp; <TiArrowRight className='mt-1' /> </span>
+                                <input id="event_fee" type="text" className="grow w-fit" {...register('event_fee', { required: false, onChange: (e) => setEventFee(e.target.value) })} />
+                            </label>
+                            {errors.event_fee && <p className="text-red-600">{errors.event_fee.message}</p>}
+                        </div>
+
+                        
+                    </div>
+
+                </div>
+
                 <div className='flex flex-col gap-3 my-4'>
                     {/* Title */}
                     <label htmlFor="title" className="input input-bordered bg-white text-black flex items-center gap-2">

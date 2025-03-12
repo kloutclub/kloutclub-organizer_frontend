@@ -12,6 +12,7 @@ import { domain } from './constants';
 import { apiKey } from './constants';
 import Footer from './Footer';
 
+
 type EventType = {
     id: number;
     uuid: string;
@@ -52,6 +53,8 @@ type EventType = {
     total_accepted: number;
     total_not_accepted: number;
     total_rejected: number;
+    paid_event: number,
+    event_fee: string
 }
 
 
@@ -126,6 +129,11 @@ const ExploreViewEvent: React.FC = () => {
         lng: -38.523, // Default longitude
     });
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [ isFeesPaid, setIsFeesPaid ] = useState<Boolean>(false);
+    const [paymentUrl, setPaymentUrl] = useState<string>('');
+    const iframeRef = useRef<HTMLIFrameElement>(null);
+    const [count, setCount] = useState(0)
+
     const modalRef = useRef<HTMLDialogElement>(null);
 
     const [formErrors, setFormErrors] = useState({
@@ -349,50 +357,156 @@ const ExploreViewEvent: React.FC = () => {
         }
     };
 
+    // const checkPaymentStatus = () => {
+    //     const iframe = iframeRef.current;
+    //     if (iframe && iframe.contentWindow) {
+    //         try {
+    //             const url = iframe.contentWindow.location.href;
+    //             console.log(url);
+    //             if (url.includes('https://www.klout.club/')) {  // Check if the URL contains 'surl'
+    //                 openModal();
+    //                 setIsFeesPaid(true);
+    //                 // Make an API call or handle the successful payment
+    //             }
+    //         } catch (error) {
+    //             console.error('Error accessing iframe content:', error);
+    //         }
+    //     }
+    // };
+
+    // useEffect(() => {
+    //     const interval = setInterval(checkPaymentStatus, 2000); // Check every second
+    //     return () => clearInterval(interval);
+    // }, []);
+
+    const handleIframeLoad = () => {
+        // console.log('Iframe loaded');
+        if(count !== 0){
+            
+            openModal();
+            setIsFeesPaid(true);
+        }else{
+            setCount(1)
+        }
+        
+        // Assume some changes based on the iframe's load status
+        // Perhaps attempt verification from the backend here
+    };
+    
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (validateForm()) {
-            try {
-                // Form is valid, proceed with submission
-                const companyId = companies?.find(company => company.name === selectedCompany);
-                const newObj = {
-                    ...userDetails,
-                    company: companyId?.id,
-                    company_name: selectedCompany === "Others" ? customCompanyName : selectedCompany,
-                    event_uuid: currentEvent?.uuid
-                };
 
-                const response = await axios.post(`${domain}/api/request_event_invitation`, {
-                    ...newObj
-                }, {
-                    headers: {
-                        'Content-Type': 'application/json',
+            if(currentEvent?.paid_event === 1){
+                if(isFeesPaid){
+                    try {
+                        // Form is valid, proceed with submission
+                        const companyId = companies?.find(company => company.name === selectedCompany);
+                        const newObj = {
+                            ...userDetails,
+                            company: companyId?.id,
+                            company_name: selectedCompany === "Others" ? customCompanyName : selectedCompany,
+                            event_uuid: currentEvent?.uuid
+                        };
+        
+                        const response = await axios.post(`${domain}/api/request_event_invitation`, {
+                            ...newObj
+                        }, {
+                            headers: {
+                                'Content-Type': 'application/json',
+                            }
+                        });
+        
+                        if (response.data.status === 200) {
+                            swal({
+                                title: "Success",
+                                text: response.data.message || "Registration Successfull",
+                                icon: "success",
+                            });
+                        } else {
+                            swal({
+                                title: "Error",
+                                text: response.data.message || "Something went wrong with registration",
+                                icon: "error",
+                            });
+                        }
+                        closeModal();
+                    } catch (error) {
+                        swal({
+                            title: "Error",
+                            text: "An error occurred during registration",
+                            icon: "error",
+                        });
+                    } finally {
+                        setIsLoading(false);
                     }
-                });
+                }else{
+                    const response = await axios.post('https://app.klout.club/api/v1/payment/purchase-event-plan', { 
+                        firstName: userDetails.first_name,
+                        email: userDetails.email_id,
+                        mobileNumber: userDetails.phone_number,
+                        amount: `${currentEvent.event_fee}.00`
+                        
+                     }, {
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                     });
 
-                if (response.data.status === 200) {
-                    swal({
-                        title: "Success",
-                        text: response.data.message || "Registration Successfull",
-                        icon: "success",
+                     if(response.data.status){
+                        closeModal()
+                        // window.location.href = response.data.redirectUrl
+                        setPaymentUrl(response.data.redirectUrl);
+                     }
+                     
+
+                    
+                }
+            }else{
+                try {
+                    // Form is valid, proceed with submission
+                    const companyId = companies?.find(company => company.name === selectedCompany);
+                    const newObj = {
+                        ...userDetails,
+                        company: companyId?.id,
+                        company_name: selectedCompany === "Others" ? customCompanyName : selectedCompany,
+                        event_uuid: currentEvent?.uuid
+                    };
+    
+                    const response = await axios.post(`${domain}/api/request_event_invitation`, {
+                        ...newObj
+                    }, {
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
                     });
-                } else {
+    
+                    if (response.data.status === 200) {
+                        swal({
+                            title: "Success",
+                            text: response.data.message || "Registration Successfull",
+                            icon: "success",
+                        });
+                    } else {
+                        swal({
+                            title: "Error",
+                            text: response.data.message || "Something went wrong with registration",
+                            icon: "error",
+                        });
+                    }
+                    closeModal();
+                } catch (error) {
                     swal({
                         title: "Error",
-                        text: response.data.message || "Something went wrong with registration",
+                        text: "An error occurred during registration",
                         icon: "error",
                     });
+                } finally {
+                    setIsLoading(false);
                 }
-                closeModal();
-            } catch (error) {
-                swal({
-                    title: "Error",
-                    text: "An error occurred during registration",
-                    icon: "error",
-                });
-            } finally {
-                setIsLoading(false);
             }
+            
         }
     };
 
@@ -418,6 +532,19 @@ const ExploreViewEvent: React.FC = () => {
 
     return (
         <div className='w-full h-full overflow-auto top-0 absolute left-0 bg-brand-foreground text-black'>
+
+            {/* Render Iframe for Payment */}
+            {paymentUrl && (
+                <iframe
+                    ref={iframeRef}
+                    src={paymentUrl}
+                    className="w-full z-100 h-screen fixed -top-10 left-0 bg-white" // Adjust as needed
+                    title="Payment"
+                    style={{marginTop: '100px'}}
+                    onLoad={handleIframeLoad}
+                />
+            )}
+
             <div className='!text-black w-full z-30 fixed top-0 left-0'>
                 <Navbar />
             </div>
