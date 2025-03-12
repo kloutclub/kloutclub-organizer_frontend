@@ -74,7 +74,7 @@ const AddEvent: React.FC = () => {
     const navigate = useNavigate();
     const { register, handleSubmit, formState: { errors }, setValue, reset } = useForm<FormType>();
     const [, setPrinters] = useState<number>(0);
-    const [eventFee , setEventFee] = useState<string>("0");
+    const [eventFee, setEventFee] = useState<string>("1");
     const [selectedImage, setSelectedImage] = useState('');
     const [, setImage] = useState<File | null>(null);
     const [randomOTP, setRandomOTP] = useState<string>("");
@@ -112,11 +112,6 @@ const AddEvent: React.FC = () => {
     const handleToggleChange = (e: any) => {
         setViewAgendaBy(e.target.checked ? 1 : 0); // Update state based on checkbox value
     };
-
-    const handleToggleEventFeeChange = (e: any) => {
-        setPaidEvent(e.target.checked ? 1 : 0); // Update state based on checkbox value
-    };
-
 
     // Handle image upload
     const handleImageUpload = (e: any) => {
@@ -403,10 +398,9 @@ const AddEvent: React.FC = () => {
             {/* <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-1 gap-4"> */}
             <form onSubmit={handleSubmit(onSubmit)} className="gap-4">
 
-            <div className='flex flex-col gap-3 my-4'>
-                    {/* Printer Count and View Agenda By in one row */}
+                <div className='flex flex-col gap-3 my-4'>
+                    {/* Event Type and Fee in another row */}
                     <div className='flex gap-3'>
-                        {/* Printer Count */}
                         <div className='flex flex-col gap-3 w-full'>
                             <label htmlFor='paid_event' className="input cursor-pointer input-bordered bg-white text-black flex items-center gap-2">
                                 <span className="font-semibold text-green-700 flex justify-between items-center">
@@ -416,26 +410,46 @@ const AddEvent: React.FC = () => {
                                 <span className='text-sm text-gray-600'>Free</span>
                                 <input
                                     type="checkbox"
-                                    checked={paidEvent === 1} // Control the checkbox based on state
-                                    onChange={handleToggleEventFeeChange} // Handle the change event
-                                    id="paidEvent"
+                                    checked={paidEvent === 1}
+                                    onChange={(e) => {
+                                        setPaidEvent(e.target.checked ? 1 : 0);
+                                        if (!e.target.checked) {
+                                            setValue('event_fee', "1");
+                                        }
+                                    }}
+                                    id="paid_event"
                                     className="toggle toggle-md toggle-success"
                                 />
                                 <span className='text-sm text-gray-600'>Paid</span>
                             </label>
                         </div>
 
-                        <div className='flex flex-col gap-3 w-full'>
-                            <label htmlFor="event_fee" className="input input-bordered bg-white text-black flex items-center gap-2">
-                                <span className="font-semibold text-green-700 min-w-fit flex justify-between items-center">Event Fee &nbsp; <TiArrowRight className='mt-1' /> </span>
-                                <input id="event_fee" type="text" className="grow w-fit" {...register('event_fee', { required: false, onChange: (e) => setEventFee(e.target.value) })} />
-                            </label>
-                            {errors.event_fee && <p className="text-red-600">{errors.event_fee.message}</p>}
-                        </div>
-
-                        
+                        {/* event_fee input - only shown when isPaid is true */}
+                        {paidEvent ? (
+                            <div className='flex flex-col gap-3 w-full'>
+                                <label htmlFor="event_fee" className="input input-bordered bg-white text-black flex items-center gap-2">
+                                    <span className="font-semibold text-green-700 flex justify-between items-center">
+                                        Event Fee (₹) &nbsp;
+                                        <TiArrowRight className='mt-1' />
+                                    </span>
+                                    <input
+                                        id="event_fee"
+                                        type="number"
+                                        min="1"
+                                        className="grow"
+                                        defaultValue={1}
+                                        {...register('event_fee')}
+                                        onBlur={(e) => {
+                                            const value = e.target.value;
+                                            if (!value || value === "0") {
+                                                setValue('event_fee', "1");
+                                            }
+                                        }}
+                                    />
+                                </label>
+                            </div>
+                        ): <></>}
                     </div>
-
                 </div>
 
                 <div className='flex flex-col gap-3 my-4'>

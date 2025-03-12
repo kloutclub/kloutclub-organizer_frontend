@@ -25,6 +25,8 @@ type eventType = {
     state: string,
     country: string,
     pincode: string,
+    paid_event: number,
+    event_fee: string,
     google_map_link: string,
     created_at: string,
     updated_at: string,

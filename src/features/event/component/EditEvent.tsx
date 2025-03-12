@@ -40,6 +40,8 @@ type formInputType = {
     printer_count: number | null;
     event_otp: string;
     view_agenda_by: number;
+    paid_event: number;
+    event_fee: string;
 };
 
 interface EditEventProps {
@@ -74,6 +76,7 @@ const EditEvent: React.FC<EditEventProps> = ({ uuid }) => {
     const dummyImage = imageBaseUrl + '/' + currentEvent?.image;
 
     const [viewAgendaBy, setViewAgendaBy] = useState(0);
+    const [isPaid, setIsPaid] = useState<number>(0);
 
     const handleToggleChange = (e: any) => {
         console.log(e.target.checked);
@@ -82,9 +85,12 @@ const EditEvent: React.FC<EditEventProps> = ({ uuid }) => {
 
     useEffect(() => {
         if (currentEvent) {
+            console.log("The current event is: ", currentEvent);
             const printer = currentEvent.printer_count === null ? 0 : currentEvent.printer_count;
             setPrinters(printer);
             setValue("printer_count", printer);
+            setIsPaid(currentEvent.paid_event);
+            setValue("event_fee", currentEvent.event_fee || "1");
         }
     }, [currentEvent]);
 
@@ -117,6 +123,8 @@ const EditEvent: React.FC<EditEventProps> = ({ uuid }) => {
 
             setValue("view_agenda_by", agendaby);
             setValue("event_otp", otp);
+            setValue("paid_event", data.paid_event || false);
+            setValue("event_fee", data.event_fee || 1);
 
             setRandomOTP(otp);
 
@@ -145,7 +153,7 @@ const EditEvent: React.FC<EditEventProps> = ({ uuid }) => {
                 }
             }
         })
-    }, [setValue, currentEvent, printers, ]);
+    }, [setValue, currentEvent, printers,]);
 
     const generateRandomOTP = () => {
         const otp = Math.floor(Math.random() * 900000) + 100000;
@@ -192,6 +200,10 @@ const EditEvent: React.FC<EditEventProps> = ({ uuid }) => {
             data.status = 1;
             data._method = 'PUT';
             data.view_agenda_by = viewAgendaBy;
+            data.paid_event = isPaid;
+            if (!isPaid) {
+                data.event_fee = "1";
+            }
 
             const formData = new FormData();
             Object.entries(data).forEach(([key, value]) => {
@@ -231,7 +243,7 @@ const EditEvent: React.FC<EditEventProps> = ({ uuid }) => {
                     }).then((result) => {
                         if (result.isConfirmed) {
                             // Navigate to the home page if user clicks "Ok"
-                            navigate('/');
+                            navigate('/dashboard');
                         }
                     });
                 } else {
@@ -517,14 +529,66 @@ const EditEvent: React.FC<EditEventProps> = ({ uuid }) => {
                                 <span className='text-sm text-gray-600'>All</span>
                                 <input
                                     type="checkbox"
-                                    checked={viewAgendaBy ? true : false} // Control the checkbox based on state
-                                    onChange={handleToggleChange} // Handle the change event
+                                    checked={viewAgendaBy ? true : false}
+                                    onChange={handleToggleChange}
                                     id="view_agenda_by"
                                     className="toggle toggle-md toggle-success"
                                 />
                                 <span className='text-sm text-gray-600'>Checked In</span>
                             </label>
                         </div>
+                    </div>
+
+                    {/* Event Type and Fee in another row */}
+                    <div className='flex gap-3'>
+                        <div className='flex flex-col gap-3 w-full'>
+                            <label htmlFor='paid_event' className="input cursor-pointer input-bordered bg-white text-black flex items-center gap-2">
+                                <span className="font-semibold text-green-700 flex justify-between items-center">
+                                    Event Type &nbsp;
+                                    <TiArrowRight className='mt-1' />
+                                </span>
+                                <span className='text-sm text-gray-600'>Free</span>
+                                <input
+                                    type="checkbox" 
+                                    checked={isPaid === 1}
+                                    onChange={(e) => {
+                                        setIsPaid(e.target.checked ? 1 : 0);
+                                        if (!e.target.checked) {
+                                            setValue('event_fee', "1");
+                                        }
+                                    }}
+                                    id="paid_event"
+                                    className="toggle toggle-md toggle-success"
+                                />
+                                <span className='text-sm text-gray-600'>Paid</span>
+                            </label>
+                        </div>
+
+                        {/* event_fee input - only shown when isPaid is true */}
+                        {isPaid ? (
+                            <div className='flex flex-col gap-3 w-full'>
+                                <label htmlFor="event_fee" className="input input-bordered bg-white text-black flex items-center gap-2">
+                                    <span className="font-semibold text-green-700 flex justify-between items-center">
+                                        Event Fee (₹) &nbsp;
+                                        <TiArrowRight className='mt-1' />
+                                    </span>
+                                    <input
+                                        id="event_fee"
+                                        type="number"
+                                        min="1"
+                                        className="grow"
+                                        defaultValue={currentEvent?.event_fee || 1}
+                                        {...register('event_fee')}
+                                        onBlur={(e) => {
+                                            const value = e.target.value;
+                                            if (!value || value === "0") {
+                                                setValue('event_fee', "1");
+                                            }
+                                        }}
+                                    />
+                                </label>
+                            </div>
+                        ): <></>}
                     </div>
 
                     {/* Event OTP - Full Width */}
