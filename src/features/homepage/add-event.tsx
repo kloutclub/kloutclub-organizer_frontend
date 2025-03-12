@@ -23,33 +23,6 @@ import { Link } from "react-router-dom";
 import { Helmet } from 'react-helmet-async';
 import GoogleMapComponent from './GoogleMapComponent';
 
-// interface Form {
-//     title: string;
-//     image: File | string | null; // This can be either a File from the file input or a string for selected template URLs
-//     description: string;
-//     event_start_date: string;
-//     event_end_date: string;
-//     event_date: string;
-//     start_time: string; // New field for formatted start time (e.g., '16:05')
-//     start_minute_time: string; // New field for start time minute part (e.g., '05')
-//     start_time_type: string; // New field for AM/PM designation (e.g., 'PM')
-//     end_time: string; // New field for formatted end time (e.g., '17:05')
-//     end_minute_time: string; // New field for end time minute part (e.g., '05')
-//     end_time_type: string; // New field for AM/PM designation (e.g., 'PM')
-//     event_venue_name: string;
-//     event_venue_address_1: string;
-//     event_venue_address_2: string;
-//     country: string;
-//     state: string;
-//     city: string;
-//     pincode: string;
-//     google_map_link: string;
-//     status: number;
-//     feedback: number;
-//     event_otp: string;
-//     view_agenda_by: number;
-// }
-
 interface FormUI {
     title: string;
     image: File | string | null; // This can be either a File from the file input or a string for selected template URLs
@@ -66,6 +39,8 @@ interface FormUI {
     status: number;
     feedback: number;
     event_otp: string;
+    paid_event: number;
+    event_fee: string;
     view_agenda_by: number;
 }
 
@@ -98,6 +73,8 @@ const AddEvent: React.FC = () => {
         status: 1,
         event_otp: "000000",
         view_agenda_by: 0,
+        paid_event: 0,
+        event_fee: "0",
     });
     const navigate = useNavigate();
     const [selectedStartDate, setSelectedStartDate] = useState('');
@@ -384,6 +361,8 @@ const AddEvent: React.FC = () => {
                     status: 1,
                     event_otp: "000000",
                     view_agenda_by: 0,
+                    paid_event: 0,
+                    event_fee: "0",
                 });
                 validationErrors = [];
 
@@ -461,6 +440,58 @@ const AddEvent: React.FC = () => {
                             className={`rounded-lg bg-white px-3 py-1 focus:outline-none ${errors.title ? 'border-rose-600' : ''}`}
                         />
                         {errors.title && <span className='text-rose-600 text-xs'>{errors.title}</span>}
+                    </div>
+
+                    <div className='flex gap-3'>
+                        {/* Event Type */}
+                        <div className='flex flex-col w-full'>
+                            <span className='text-xl'>Event Type</span>
+                            <div className='flex items-center gap-3 bg-white rounded-lg px-3 py-1'>
+                                <span className='text-sm text-gray-600'>Free</span>
+                                <input
+                                    type="checkbox"
+                                    checked={formData.paid_event === 1}
+                                    onChange={(e) => {
+                                        setFormData(prev => ({
+                                            ...prev,
+                                            paid_event: e.target.checked ? 1 : 0,
+                                            event_fee: e.target.checked ? "1" : "0" // Set to "1" when switching to paid
+                                        }));
+                                    }}
+                                    className="toggle toggle-md hover:bg-brand-primary bg-brand-primary outline:bg-brand-primary"
+                                />
+                                <span className='text-sm text-gray-600'>Paid</span>
+                            </div>
+                        </div>
+
+                        {/* Event Fee */}
+                        {formData.paid_event === 1 && (
+                            <div className='flex flex-col w-full'>
+                                <span className='text-xl'>Event Fee (₹) (min. ₹1)</span>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={formData.event_fee}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        setFormData(prev => ({
+                                            ...prev,
+                                            event_fee: value
+                                        }));
+                                    }}
+                                    onBlur={(e) => {
+                                        const value = e.target.value;
+                                        if (!value || value === "0") {
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                event_fee: "1"
+                                            }));
+                                        }
+                                    }}
+                                    className="rounded-lg bg-white px-3 py-1 focus:outline-none"
+                                />
+                            </div>
+                        )}
                     </div>
 
                     {/* Banner */}

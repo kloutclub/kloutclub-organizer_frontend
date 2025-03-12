@@ -12,7 +12,6 @@ import { domain } from './constants';
 import { apiKey } from './constants';
 import Footer from './Footer';
 
-
 type EventType = {
     id: number;
     uuid: string;
@@ -129,7 +128,7 @@ const ExploreViewEvent: React.FC = () => {
         lng: -38.523, // Default longitude
     });
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [ isFeesPaid, setIsFeesPaid ] = useState<Boolean>(false);
+    const [isFeesPaid, setIsFeesPaid] = useState<Boolean>(false);
     const [paymentUrl, setPaymentUrl] = useState<string>('');
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const [count, setCount] = useState(0)
@@ -357,16 +356,31 @@ const ExploreViewEvent: React.FC = () => {
         }
     };
 
-    // const checkPaymentStatus = () => {
+    // const handleIframeLoad = () => {
     //     const iframe = iframeRef.current;
-    //     if (iframe && iframe.contentWindow) {
+    //     if (iframe) {
     //         try {
-    //             const url = iframe.contentWindow.location.href;
-    //             console.log(url);
-    //             if (url.includes('https://www.klout.club/')) {  // Check if the URL contains 'surl'
-    //                 openModal();
-    //                 setIsFeesPaid(true);
-    //                 // Make an API call or handle the successful payment
+    //             const url = iframe.contentWindow?.location.href;
+    //             if (url?.includes('https://www.klout.club/')) {
+    //                 if (count !== 0) {
+    //                     setIsFeesPaid(true);
+    //                     openModal();
+    //                 } else {
+    //                     setPaymentUrl("");
+    //                     Swal.fire({
+    //                         title: "Payment Successful",
+    //                     });
+    //                     setCount(1);
+    //                 }
+    //             } else if (url?.includes('cancel')) {
+    //                 // If payment was cancelled, reset payment state and close iframe
+    //                 setPaymentUrl('');
+    //                 setIsFeesPaid(false);
+    //                 setCount(0);
+    //                 // Force iframe to reload to clear its history
+    //                 if (iframe.contentWindow) {
+    //                     iframe.contentWindow.location.reload();
+    //                 }
     //             }
     //         } catch (error) {
     //             console.error('Error accessing iframe content:', error);
@@ -374,32 +388,26 @@ const ExploreViewEvent: React.FC = () => {
     //     }
     // };
 
-    // useEffect(() => {
-    //     const interval = setInterval(checkPaymentStatus, 2000); // Check every second
-    //     return () => clearInterval(interval);
-    // }, []);
-
     const handleIframeLoad = () => {
         // console.log('Iframe loaded');
-        if(count !== 0){
-            
+        if (count !== 0) {
             openModal();
+            setPaymentUrl("");
             setIsFeesPaid(true);
-        }else{
+        } else {
             setCount(1)
         }
-        
+
         // Assume some changes based on the iframe's load status
         // Perhaps attempt verification from the backend here
     };
-    
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (validateForm()) {
 
-            if(currentEvent?.paid_event === 1){
-                if(isFeesPaid){
+            if (currentEvent?.paid_event === 1) {
+                if (isFeesPaid) {
                     try {
                         // Form is valid, proceed with submission
                         const companyId = companies?.find(company => company.name === selectedCompany);
@@ -409,7 +417,7 @@ const ExploreViewEvent: React.FC = () => {
                             company_name: selectedCompany === "Others" ? customCompanyName : selectedCompany,
                             event_uuid: currentEvent?.uuid
                         };
-        
+
                         const response = await axios.post(`${domain}/api/request_event_invitation`, {
                             ...newObj
                         }, {
@@ -417,21 +425,26 @@ const ExploreViewEvent: React.FC = () => {
                                 'Content-Type': 'application/json',
                             }
                         });
-        
+
                         if (response.data.status === 200) {
                             swal({
                                 title: "Success",
-                                text: response.data.message || "Registration Successfull",
+                                text: response.data.message || "Registration Successful",
                                 icon: "success",
                             });
+                            closeModal();
+                            setPaymentUrl('');
+                            setIsFeesPaid(false);
+                            setCount(0);
+                            window.location.reload();
                         } else {
+                            alert("Something went wrong with registration");
                             swal({
                                 title: "Error",
                                 text: response.data.message || "Something went wrong with registration",
                                 icon: "error",
                             });
                         }
-                        closeModal();
                     } catch (error) {
                         swal({
                             title: "Error",
@@ -441,29 +454,32 @@ const ExploreViewEvent: React.FC = () => {
                     } finally {
                         setIsLoading(false);
                     }
-                }else{
-                    const response = await axios.post('https://app.klout.club/api/v1/payment/purchase-event-plan', { 
-                        firstName: userDetails.first_name,
-                        email: userDetails.email_id,
-                        mobileNumber: userDetails.phone_number,
-                        amount: `${currentEvent.event_fee}.00`
-                        
-                     }, {
-                        headers: {
-                            'Content-Type': 'application/json'
+                } else {
+                    try {
+                        const response = await axios.post('https://app.klout.club/api/v1/payment/purchase-event-plan', {
+                            firstName: userDetails.first_name,
+                            email: userDetails.email_id,
+                            mobileNumber: userDetails.phone_number,
+                            amount: `${currentEvent.event_fee}.00`
+                        }, {
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        });
+
+                        if (response.data.status) {
+                            closeModal();
+                            setPaymentUrl(response.data.redirectUrl);
                         }
-                     });
-
-                     if(response.data.status){
-                        closeModal()
-                        // window.location.href = response.data.redirectUrl
-                        setPaymentUrl(response.data.redirectUrl);
-                     }
-                     
-
-                    
+                    } catch (error) {
+                        swal({
+                            title: "Error",
+                            text: "Payment initiation failed. Please try again.",
+                            icon: "error",
+                        });
+                    }
                 }
-            }else{
+            } else {
                 try {
                     // Form is valid, proceed with submission
                     const companyId = companies?.find(company => company.name === selectedCompany);
@@ -473,7 +489,7 @@ const ExploreViewEvent: React.FC = () => {
                         company_name: selectedCompany === "Others" ? customCompanyName : selectedCompany,
                         event_uuid: currentEvent?.uuid
                     };
-    
+
                     const response = await axios.post(`${domain}/api/request_event_invitation`, {
                         ...newObj
                     }, {
@@ -481,11 +497,11 @@ const ExploreViewEvent: React.FC = () => {
                             'Content-Type': 'application/json',
                         }
                     });
-    
+
                     if (response.data.status === 200) {
                         swal({
                             title: "Success",
-                            text: response.data.message || "Registration Successfull",
+                            text: response.data.message || "Registration Successful",
                             icon: "success",
                         });
                     } else {
@@ -506,7 +522,7 @@ const ExploreViewEvent: React.FC = () => {
                     setIsLoading(false);
                 }
             }
-            
+
         }
     };
 
@@ -535,14 +551,15 @@ const ExploreViewEvent: React.FC = () => {
 
             {/* Render Iframe for Payment */}
             {paymentUrl && (
-                <iframe
-                    ref={iframeRef}
-                    src={paymentUrl}
-                    className="w-full z-100 h-screen fixed -top-10 left-0 bg-white" // Adjust as needed
-                    title="Payment"
-                    style={{marginTop: '100px'}}
-                    onLoad={handleIframeLoad}
-                />
+                <div className="fixed inset-0 w-full h-full z-50">
+                    <iframe
+                        ref={iframeRef}
+                        src={paymentUrl}
+                        className="w-full h-full border-none"
+                        title="Payment"
+                        onLoad={handleIframeLoad}
+                    />
+                </div>
             )}
 
             <div className='!text-black w-full z-30 fixed top-0 left-0'>
@@ -554,13 +571,17 @@ const ExploreViewEvent: React.FC = () => {
                 <div className='space-y-4'>
                     <span className='text-gray-700 text-sm'>By {currentEvent?.company_name}</span>
 
-                    <h1 className='text-2xl font-semibold !mt-0'>{currentEvent?.title}</h1>
+                    <h1 className='text-2xl font-semibold flex items-center gap-2 !mt-0'>{currentEvent?.title} {currentEvent?.paid_event === 1 && <div className="badge badge-soft badge-info">Paid</div>}</h1>
 
                     {/* Row for Start Date */}
                     <div className='flex gap-2'>
                         <div className='rounded-md grid place-content-center size-10 bg-white'>
-                            <p className='uppercase text-orange-500 font-semibold text-xs'>WED</p>
-                            <p className='text-2xl leading-none font-semibold text-brand-gray'>30</p>
+                            <p className='uppercase text-orange-500 font-semibold text-xs'>
+                                {new Date(startTime).toLocaleString('en-US', {weekday: 'short'}).toUpperCase()}
+                            </p>
+                            <p className='text-2xl leading-none font-semibold text-brand-gray'>
+                                {new Date(startTime).getDate()}
+                            </p>
                         </div>
                         <div>
                             <h4 className='font-semibold'>{convertDateFormat(startTime)}</h4>
@@ -606,7 +627,7 @@ const ExploreViewEvent: React.FC = () => {
                             </div>
 
                             <div className={`p-[10px] ${new Date(currentEvent?.event_date || '') < new Date() ? 'blur-[2px]' : ''}`}>
-                                <p className='text-sm'>Welcome! Register below to request event access.</p>
+                                <p className='text-sm'>{currentEvent?.paid_event === 1 ? "This is a paid event, click below to pay the registration fees and get an invite" : "Welcome! Register below to request event access."}</p>
                                 {/* <button className="btn" onClick={openModal}>open modal</button> */}
                                 <button
                                     className='w-full mt-[10px] p-3 bg-brand-primary rounded-lg text-white'

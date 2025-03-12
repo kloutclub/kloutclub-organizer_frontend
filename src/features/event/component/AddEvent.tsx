@@ -74,7 +74,7 @@ const AddEvent: React.FC = () => {
     const navigate = useNavigate();
     const { register, handleSubmit, formState: { errors }, setValue, reset } = useForm<FormType>();
     const [, setPrinters] = useState<number>(0);
-    const [eventFee, setEventFee] = useState<string>("1");
+    const [eventFee, _] = useState<string>("1");
     const [selectedImage, setSelectedImage] = useState('');
     const [, setImage] = useState<File | null>(null);
     const [randomOTP, setRandomOTP] = useState<string>("");

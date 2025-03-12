@@ -34,6 +34,8 @@ const ExploreAllEvents: React.FC = () => {
           const eventDate = new Date(event.event_start_date);
           eventDate.setHours(0, 0, 0, 0);
           return eventDate >= today;
+        }).sort((a: any, b: any) => {
+          return new Date(a.event_start_date).getTime() - new Date(b.event_start_date).getTime();
         });
 
         const pastEvents = res.data.data.filter((event: any) => {
@@ -170,7 +172,7 @@ const ExploreAllEvents: React.FC = () => {
                   <img src={apiBaseUrl + "/" + event.image} alt="background" className='w-24 h-24 rounded-md object-center object-cover' />
                   <div className='space-y-2 overflow-hidden'>
                     <p className='text-sm text-brand-gray !leading-none truncate'>by {event?.company_name}</p>
-                    <h1 className='text-xl font-semibold leading-none truncate'>{event.title}</h1>
+                    <h1 className='text-xl font-semibold leading-none truncate'>{event.title} {event.paid_event === 1 && <div className="badge badge-info">Paid</div>}</h1>
                     <div className='flex gap-2 items-center'>
                       <img src={Calender} alt="calendar" className='w-4 h-4 flex-shrink-0' />
                       <p className='text-sm font-light text-brand-gray !leading-none truncate'>

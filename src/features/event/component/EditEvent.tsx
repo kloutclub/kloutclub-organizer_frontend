@@ -541,7 +541,7 @@ const EditEvent: React.FC<EditEventProps> = ({ uuid }) => {
 
                     {/* Event Type and Fee in another row */}
                     <div className='flex gap-3'>
-                        <div className='flex flex-col gap-3 w-full'>
+                        <div className='flex flex-col gap-3 w-1/2'>
                             <label htmlFor='paid_event' className="input cursor-pointer input-bordered bg-white text-black flex items-center gap-2">
                                 <span className="font-semibold text-green-700 flex justify-between items-center">
                                     Event Type &nbsp;
@@ -565,8 +565,8 @@ const EditEvent: React.FC<EditEventProps> = ({ uuid }) => {
                         </div>
 
                         {/* event_fee input - only shown when isPaid is true */}
-                        {isPaid ? (
-                            <div className='flex flex-col gap-3 w-full'>
+                        {isPaid && (
+                            <div className='flex flex-col gap-3 w-1/2'>
                                 <label htmlFor="event_fee" className="input input-bordered bg-white text-black flex items-center gap-2">
                                     <span className="font-semibold text-green-700 flex justify-between items-center">
                                         Event Fee (₹) &nbsp;
@@ -575,20 +575,19 @@ const EditEvent: React.FC<EditEventProps> = ({ uuid }) => {
                                     <input
                                         id="event_fee"
                                         type="number"
-                                        min="1"
                                         className="grow"
                                         defaultValue={currentEvent?.event_fee || 1}
                                         {...register('event_fee')}
-                                        onBlur={(e) => {
-                                            const value = e.target.value;
-                                            if (!value || value === "0") {
+                                        onChange={(e) => {
+                                            const value = parseInt(e.target.value);
+                                            if (value <= 0) {
                                                 setValue('event_fee', "1");
                                             }
                                         }}
                                     />
                                 </label>
                             </div>
-                        ): <></>}
+                        )}
                     </div>
 
                     {/* Event OTP - Full Width */}
